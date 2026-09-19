@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Stage Compound Spur Gear Train | 3D WebGL Digital Twin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js and OrbitControls (local bundle for offline & file:// reliability) -->
+  <script src="js/three.min.js"></script>
+  <script src="js/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- 3D WebGL Rendering Container -->
+  <div id="webgl-container"></div>
+
+  <!-- Top Glassmorphic Navigation Bar -->
+  <header class="hud-panel hud-header">
+    <div class="brand-section">
+      <span class="brand-badge">AGMA 20° CAD</span>
+      <div>
+        <h1 class="app-title">Two-Stage Compound Spur Gear Train</h1>
+        <div class="app-subtitle">HIGH-FIDELITY DIGITAL TWIN • 9:1 COMPOUND REDUCTION</div>
+      </div>
+    </div>
+    <div class="header-specs">
+      <div class="spec-pill">
+        <span class="spec-label">Total Ratio</span>
+        <span class="spec-val">9.00 : 1</span>
+      </div>
+      <div class="spec-pill">
+        <span class="spec-label">Gear Module</span>
+        <span class="spec-val">m = 4.0 mm</span>
+      </div>
+      <div class="spec-pill">
+        <span class="spec-label">Train Efficiency</span>
+        <span class="spec-val">η = 96.04%</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Floating Quick-Toggle Pills (Shown by default so 3D model is 100% unobstructed) -->
+  <button id="btn-reopen-left" class="floating-pill-toggle left" style="display: flex;">📊 Telemetry</button>
+  <button id="btn-quick-transparent" class="floating-pill-toggle center-pill">💎 Transparent View</button>
+  <button id="btn-reopen-right" class="floating-pill-toggle right" style="display: flex;">⚙️ Controls</button>
+
+  <!-- Left Glassmorphic Telemetry Dashboard (Collapsed by default to eliminate side write-up) -->
+  <aside id="panel-telemetry" class="hud-panel hud-telemetry collapsed">
+    <div class="panel-header-row">
+      <div class="section-title" style="margin-bottom: 0;">Telemetry</div>
+      <button class="panel-collapse-btn" id="btn-collapse-left" title="Minimize">◀</button>
+    </div>
+
+    <!-- Rotational Speeds -->
+    <div class="card-group">
+      <div class="metric-card highlight-stage1">
+        <div class="metric-info">
+          <span class="metric-label">Drive Mode</span>
+        </div>
+        <div class="metric-value" style="font-size: 12px;"><span id="tel-drive-type">Timing Belt</span></div>
+      </div>
+
+      <div class="metric-card highlight-stage1">
+        <div class="metric-info">
+          <span class="metric-label">Input Shaft (18T)</span>
+          <div class="meter-bar-container">
+            <div id="bar-rpm" class="meter-bar"></div>
+          </div>
+        </div>
+        <div class="metric-value"><span id="tel-rpm1">1450</span> <span class="unit">RPM</span></div>
+      </div>
+
+      <div class="metric-card highlight-stage2">
+        <div class="metric-info">
+          <span class="metric-label">Countershaft (54T / 18T)</span>
+        </div>
+        <div class="metric-value"><span id="tel-rpm2">483</span> <span class="unit">RPM</span></div>
+      </div>
+
+      <div class="metric-card highlight-output">
+        <div class="metric-info">
+          <span class="metric-label">Output Shaft (54T)</span>
+        </div>
+        <div class="metric-value"><span id="tel-rpm4">161</span> <span class="unit">RPM</span></div>
+      </div>
+    </div>
+
+    <!-- Torques & Power -->
+    <div class="card-group">
+      <div class="metric-card highlight-output">
+        <div class="metric-info">
+          <span class="metric-label">Output Torque (τ₄)</span>
+          <div class="meter-bar-container">
+            <div id="bar-load" class="meter-bar"></div>
+          </div>
+        </div>
+        <div class="metric-value"><span id="tel-torque4">35.00</span> <span class="unit">N·m</span></div>
+      </div>
+
+      <div class="metric-card highlight-stage2">
+        <div class="metric-info">
+          <span class="metric-label">Counter Torque (τ₂)</span>
+        </div>
+        <div class="metric-value"><span id="tel-torque2">11.90</span> <span class="unit">N·m</span></div>
+      </div>
+
+      <div class="metric-card highlight-stage1">
+        <div class="metric-info">
+          <span class="metric-label">Motor Torque (τ₁)</span>
+        </div>
+        <div class="metric-value"><span id="tel-torque1">4.05</span> <span class="unit">N·m</span></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-info">
+          <span class="metric-label">Power</span>
+        </div>
+        <div class="metric-value"><span id="tel-power">0.615</span> <span class="unit">kW</span></div>
+      </div>
+    </div>
+
+    <!-- Contact Stresses & Velocity -->
+    <div class="card-group">
+      <div class="metric-card highlight-stress">
+        <div class="metric-info">
+          <span class="metric-label">Hertz Stress</span>
+          <div class="meter-bar-container">
+            <div id="bar-stress" class="meter-bar coral"></div>
+          </div>
+        </div>
+        <div class="metric-value"><span id="tel-hertz">485.2</span> <span class="unit">MPa</span></div>
+      </div>
+
+      <div class="metric-card highlight-stress">
+        <div class="metric-info">
+          <span class="metric-label">Lewis Stress</span>
+        </div>
+        <div class="metric-value"><span id="tel-lewis">82.4</span> <span class="unit">MPa</span></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-info">
+          <span class="metric-label">Pitch Velocity</span>
+        </div>
+        <div class="metric-value"><span id="tel-pitch-vel">5.47</span> <span class="unit">m/s</span></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-info">
+          <span class="metric-label">Mesh Frequency</span>
+        </div>
+        <div class="metric-value" style="font-size: 12px;">
+          <span id="tel-mesh-freq1">435</span> / <span id="tel-mesh-freq2">145 Hz</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Glassmorphic Engineering Controls (Collapsed by default) -->
+  <aside id="panel-controls" class="hud-panel hud-controls collapsed">
+    <div class="panel-header-row">
+      <div class="section-title" style="margin-bottom: 0;">Drive Connection</div>
+      <button class="panel-collapse-btn" id="btn-collapse-right" title="Minimize">▶</button>
+    </div>
+    <div class="drive-mode-row">
+      <button class="drive-btn active" data-drive="belt">
+        <span style="font-size: 15px;">🔄</span>
+        <span>Timing Belt</span>
+      </button>
+      <button class="drive-btn" data-drive="chain">
+        <span style="font-size: 15px;">⛓️</span>
+        <span>Roller Chain</span>
+      </button>
+      <button class="drive-btn" data-drive="combo">
+        <span style="font-size: 15px;">🔀</span>
+        <span>Belt + Rollers</span>
+      </button>
+      <button class="drive-btn" data-drive="coupling">
+        <span style="font-size: 15px;">🧲</span>
+        <span>Spider Coupling</span>
+      </button>
+    </div>
+
+    <div class="section-title">Drive Controls</div>
+
+    <!-- RPM Control -->
+    <div class="control-group">
+      <div class="control-header">
+        <span class="control-label">Motor RPM</span>
+        <span id="rpm-value" class="control-val">1450 RPM</span>
+      </div>
+      <input type="range" id="rpm-slider" min="0" max="3000" step="10" value="1450">
+      <div class="preset-row">
+        <button class="preset-btn preset-rpm-btn" data-val="0">STOP</button>
+        <button class="preset-btn preset-rpm-btn" data-val="300">300</button>
+        <button class="preset-btn preset-rpm-btn" data-val="1450">1450</button>
+        <button class="preset-btn preset-rpm-btn" data-val="3000">3000</button>
+      </div>
+    </div>
+
+    <!-- Load Control -->
+    <div class="control-group">
+      <div class="control-header">
+        <span class="control-label">Load Torque</span>
+        <span id="load-value" class="control-val">35.0 N·m</span>
+      </div>
+      <input type="range" id="load-slider" min="0" max="100" step="0.5" value="35">
+    </div>
+
+    <div class="section-title">Inspection</div>
+
+    <!-- Exploded View Slider -->
+    <div class="control-group">
+      <div class="control-header">
+        <span class="control-label">Exploded View</span>
+        <span id="explode-value" class="control-val">0%</span>
+      </div>
+      <input type="range" id="explode-slider" min="0" max="1" step="0.01" value="0">
+    </div>
+
+    <!-- Backlash / Clearance Adjuster -->
+    <div class="control-group">
+      <div class="control-header">
+        <span class="control-label">Tooth Backlash</span>
+        <span id="backlash-value" class="control-val">0.12 mm</span>
+      </div>
+      <input type="range" id="backlash-slider" min="0.02" max="0.50" step="0.01" value="0.12">
+    </div>
+  </aside>
+
+  <!-- Bottom Floating Action Ribbon -->
+  <footer class="hud-panel hud-ribbon">
+    <!-- Playback -->
+    <button id="btn-play-pause" class="btn-action active">
+      <span class="icon">⏸</span> Pause
+    </button>
+    <button id="btn-reverse" class="btn-action">
+      <span class="icon">🔄</span> Reverse
+    </button>
+
+    <div class="divider"></div>
+
+    <!-- Inspection Modes -->
+    <button id="btn-transparent" class="btn-action">
+      <span class="icon">💎</span> Transparent View
+    </button>
+    <button id="btn-cutaway" class="btn-action">
+      <span class="icon">🔬</span> X-Ray Internals
+    </button>
+    <button id="btn-overlay" class="btn-action">
+      <span class="icon">📐</span> Pitch Vectors
+    </button>
+    <button id="btn-audio" class="btn-action">
+      <span class="icon">🔇</span> Sound
+    </button>
+
+    <div class="divider"></div>
+
+    <!-- Camera Presets -->
+    <div class="camera-pills">
+      <button class="cam-btn active" data-camera="isometric">Isometric</button>
+      <button class="cam-btn" data-camera="internals">Internal View</button>
+      <button class="cam-btn" data-camera="motorDrive">Motor Drive</button>
+      <button class="cam-btn" data-camera="mesh1">Mesh 1</button>
+      <button class="cam-btn" data-camera="mesh2">Mesh 2</button>
+      <button class="cam-btn" data-camera="top">Top</button>
+      <button class="cam-btn" data-camera="endView">End View</button>
+      <button class="cam-btn" data-camera="orbit">Auto Orbit</button>
+    </div>
+  </footer>
+
+  <!-- Application Modules -->
+  <script src="js/gearGenerator.js"></script>
+  <script src="js/motorDrive.js"></script>
+  <script src="js/modelAssembly.js"></script>
+  <script src="js/kinematics.js"></script>
+  <script src="js/audioSynthesizer.js"></script>
+  <script src="js/hudController.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
